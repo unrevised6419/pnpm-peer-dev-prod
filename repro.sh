@@ -15,9 +15,9 @@ run_app() {
 scenario() {
 	echo "### $1"
 	rm -rf node_modules packages/*/node_modules pnpm-lock.yaml
-	pnpm install --config.strict-peer-dependencies=true >/dev/null || echo "install failed"
+	pnpm install >/dev/null || echo "install failed"
 	echo "full install:  $(run_app)"
-	pnpm install --prod --config.strict-peer-dependencies=true --config.confirmModulesPurge=false >/dev/null \
+	pnpm install --prod --config.confirmModulesPurge=false >/dev/null \
 		|| echo "prod install failed"
 	echo "--prod:        $(run_app)"
 	echo "lockfile entry for packages/lib:"
