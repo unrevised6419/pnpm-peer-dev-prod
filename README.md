@@ -7,20 +7,26 @@ on pnpm 12.8.1 (also reproduced on 11.26.0).
 
 ```
 packages/
-  app/   dependencies: { "lib": "workspace:*" }      requires lib
-  lib/   peerDependencies: { "ms": "^2.1.0" }        requires ms
+  app/   dependencies: { "lib": "workspace:*", "ms": "^2.1.3" }   requires lib
+  lib/   peerDependencies: { "ms": "^2.1.0" }                    requires ms
          devDependencies:  { "ms": "^2.1.3" }
 ```
 
 `lib` is a **production** dependency of `app`. `lib` needs `ms` at runtime, and
 declares it as a peer, plus a devDependency so it can be developed and tested on
-its own. That pairing is the usual way to declare a peer.
-`autoInstallPeers` is on (the default).
+its own. That pairing is the usual way to declare a peer. `app`, the consumer,
+provides the peer as a production dependency, as peer semantics ask.
+
+`pnpm-workspace.yaml` uses the strict settings of the monorepo where this was
+found: `nodeLinker: isolated`, `autoInstallPeers: true`,
+`linkWorkspacePackages: true`, `virtualStoreType: global`,
+`strictPeerDependencies: true`, `engineStrict: true`, `minimumReleaseAge: 1440`.
 
 ## Run
 
 ```sh
 ./repro.sh
+PNPM_CONFIG_VIRTUAL_STORE_TYPE=project ./repro.sh   # same result
 ```
 
 ## Result
@@ -30,15 +36,21 @@ its own. That pairing is the usual way to declare a peer.
 | peer + devDependency | works | `Error: Cannot find module 'ms'` | `devDependencies` |
 | peer only | works | works | `dependencies` |
 
-Both scenarios run with `strictPeerDependencies: true`, and neither install
-prints a warning or fails.
+Neither install prints a warning or fails, despite `strictPeerDependencies`.
+The result is the same with `virtualStoreType: project`.
+
+`app` providing `ms` does not help: `lib` is linked (`link:../lib`), so Node
+resolves `require("ms")` from `packages/lib`'s real path, where only `lib`'s own
+`node_modules` is searched. For a linked workspace package, the only place a
+peer can come from is that package's own `node_modules`.
 
 ## Why this looks wrong
 
-1. **The prod graph has an unmet peer that nothing reports.** `app` → `lib` →
-   peer `ms` is entirely production edges. After `--prod` nothing provides `ms`,
-   yet the install succeeds silently, even under `strictPeerDependencies`. The
-   failure only shows at runtime.
+1. **The consumer did everything right and it still breaks.** `app` → `lib` →
+   peer `ms` is entirely production edges, and `app` provides `ms`. Because
+   `lib` is linked, that copy is unreachable from `lib`, and after `--prod` `lib`
+   has none of its own. The install succeeds silently, even under
+   `strictPeerDependencies`. The failure only shows at runtime.
 2. **A devDependency changes what production gets.** Adding a devDependency to
    `lib` removes `ms` from the production install. Without it, `autoInstallPeers`
    records `ms` under `lib`'s `dependencies` and it survives `--prod`. Dev-only

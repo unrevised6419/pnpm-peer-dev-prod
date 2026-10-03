@@ -2,5 +2,8 @@
   "name": "app",
   "version": "1.0.0",
   "private": true,
-  "dependencies": { "lib": "workspace:*" }
+  "dependencies": {
+    "lib": "workspace:*",
+    "ms": "^2.1.3"
+  }
 }

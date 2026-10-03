@@ -1,2 +1,11 @@
 packages:
   - packages/*
+
+# Same settings as the monorepo where this was found.
+nodeLinker: isolated
+autoInstallPeers: true
+linkWorkspacePackages: true
+virtualStoreType: global
+minimumReleaseAge: 1440
+engineStrict: true
+strictPeerDependencies: true
