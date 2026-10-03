@@ -1,0 +1,12 @@
+{
+  "name": "lib",
+  "version": "1.0.0",
+  "private": true,
+  "main": "index.js",
+  "peerDependencies": {
+    "ms": "^2.1.0"
+  },
+  "devDependencies": {
+    "ms": "^2.1.3"
+  }
+}
